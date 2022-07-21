@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+
+# TODO: understand how to install correctly the bin of RSPM
+export PATH=$PATH:/home/danielboll/dev/learning/rust/spm/target/debug
+
+NAME=" Name"
+LOGIN=" Login"
+PASSWORD=" Password"
+URL="  URL"
+NOTES="  Notes"
+
+get () {
+  while IFS= read -r LINE; do
+      eval "TMP_ARRAY=($LINE)"
+      SERVICES+=("${TMP_ARRAY[0]}")
+  done <<<"$(cli list)"
+
+  SERVICE="$(printf "%s\n" "${SERVICES[@]}" | dmenu -l 3 -p "$PROMPT")"
+
+  [[ $SERVICE ]] && {
+      SERVICE_DATA="$(cli get "${SERVICE}")"
+      xsel -i -b <<<"${SERVICE_DATA}"
+      dunstify "${SERVICE} copied to clipboard"
+  }
+}
+
+add () {
+  NEW_NAME="$(echo ""| dmenu -p "$NAME")"
+
+  [[ $NEW_NAME ]] && {
+    NEW_LOGIN="$(echo ""| dmenu -p "$LOGIN")"
+  }
+
+  if [[ $NEW_NAME ]] && [[ $NEW_LOGIN ]]; then
+    NEW_PASSWORD="$(echo ""| dmenu -nf "#b71c1c" -nb "#b71c1c" -p "$PASSWORD")"
+    NEW_URL="$(echo ""| dmenu -p "$URL")"
+    NEW_NOTES="$(echo ""| dmenu -p "$NOTES")"
+    cli add "$NEW_NAME" -e "$NEW_LOGIN" -p "$NEW_PASSWORD" -u "$NEW_URL" -n "$NEW_NOTES"
+    dunstify "${NEW_NAME} entry added"
+  fi
+}
+
+declare -a SERVICES
+
+PROMPT="  RSPM"
+
+GET_SERVICE="  Get user/password"
+ADD_SERVICE="+ Add a service"
+DEL_SERVICE="- Delete a service"
+
+CHOICE1=$(printf "$GET_SERVICE\n$ADD_SERVICE\n$DEL_SERVICE" | dmenu -l 3 -p "$PROMPT" -fn "Iosevka:regular:size=14")
+
+case "$CHOICE1" in
+"$GET_SERVICE")
+    get
+    ;;
+"$ADD_SERVICE")
+    add
+    ;;
+"$DEL_SERVICE")
+    # del
+    ;;
+esac
